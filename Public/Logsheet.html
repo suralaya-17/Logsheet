@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Power Monitoring Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    body {
+      background-color: #f3f4f6;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    canvas {
+      max-height: 400px;
+    }
+    .chart-container {
+      position: relative;
+      height: 400px;
+      width: 100%;
+    }
+    .grid-line {
+      stroke: #e5e7eb;
+      stroke-width: 1;
+    }
+    /* Style untuk menyembunyikan/menampilkan bagian */
+    .content-section {
+      display: none; /* Default hidden */
+    }
+    .content-section.active {
+      display: block; /* Show when active */
+    }
+  </style>
+</head>
+<body class="p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Navigation Menu -->
+    <nav class="bg-white p-4 rounded-xl shadow-lg mb-8 flex justify-center space-x-4">
+      <button id="navInput" class="px-6 py-2 rounded-md text-gray-700 font-semibold hover:bg-blue-100 hover:text-blue-700 transition duration-200 active-nav-btn">
+        Input Data
+      </button>
+      <button id="navChart" class="px-6 py-2 rounded-md text-gray-700 font-semibold hover:bg-blue-100 hover:text-blue-700 transition duration-200">
+        Grafik
+      </button>
+      <button id="navTable" class="px-6 py-2 rounded-md text-gray-700 font-semibold hover:bg-blue-100 hover:text-blue-700 transition duration-200">
+        Data Tabel
+      </button>
+    </nav>
+
+    <h1 class="text-3xl font-bold mb-6 text-gray-800 text-center">POWER MONITORING SYSTEM</h1>
+
+    <!-- Input Data Section -->
+    <div id="inputSection" class="content-section active">
+      <div class="bg-white p-6 rounded-xl shadow-lg">
+        <h2 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Form Input Data</h2>
+        <form id="bebanForm" class="space-y-4">
+          <!-- Bay Selection -->
+          <div class="space-y-2">
+            <label class="block font-semibold text-gray-700">Bay</label>
+            <select name="bay" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              <option value="">-- Pilih Bay --</option>
+              <optgroup label="500kV">
+                <option value="GT#1">GT#1</option>
+                <option value="GT#2">GT#2</option>
+                <option value="GT#3">GT#3</option>
+                <option value="GT#4">GT#4</option>
+                <option value="GT#5">GT#5</option>
+                <option value="GT#6">GT#6</option>
+                <option value="GT#7">GT#7</option>
+                <option value="SURALAYA BARU 1">SURALAYA BARU 1</option>
+                <option value="SURALAYA BARU 2">SURALAYA BARU 2</option>
+                <option value="BALARAJA 1">BALARAJA 1</option>
+                <option value="BALARAJA 2">BALARAJA 2</option>
+                <option value="JAWA 9&10 #1">JAWA 9&10 #1</option>
+                <option value="JAWA 9&10 #2">JAWA 9&10 #2</option>
+              </optgroup>
+              <optgroup label="150kV">
+                <option value="SST#1">SST#1</option>
+                <option value="SST#2">SST#2</option>
+                <option value="SST#3">SST#3</option>
+                <option value="SST#4">SST#4</option>
+                <option value="SST#8">SST#8</option>
+                <option value="MCCI">MCCI</option>
+                <option value="PENI">PENI</option>
+                <option value="PRIMA ETHYCOLINDO">PRIMA ETHYCOLINDO</option>
+                <option value="SALIRA INDAH">SALIRA INDAH</option>
+                <option value="TFT">TFT</option>
+                <option value="IBT#1">IBT#1</option>
+                <option value="SURALAYA BARU 150KV">SURALAYA BARU 150KV</option>
+              </optgroup>
+            </select>
+          </div>
+          
+          <!-- Date and Time -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label class="block font-semibold text-gray-700">Date</label>
+              <input type="date" name="tanggal" required class="w-full p-2 border border-gray-300 rounded-md">
+            </div>
+            <div class="space-y-2">
+              <label class="block font-semibold text-gray-700">Time</label>
+              <select name="jam" required class="w-full p-2 border border-gray-300 rounded-md">
+                <option value="" disabled selected>-- Select Time --</option>
+                <option value="10:00">10:00</option>
+                <option value="19:00">19:00</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Measurement Inputs -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label class="block font-semibold text-gray-700">Current (A)</label>
+              <input type="number" step="0.01" name="arus" required class="w-full p-2 border border-gray-300 rounded-md">
+            </div>
+            <div class="space-y-2">
+              <label class="block font-semibold text-gray-700">Power (MW)</label>
+              <input type="number" step="0.01" name="daya" required class="w-full p-2 border border-gray-300 rounded-md">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label class="block font-semibold text-gray-700">Reactive Power (MVAR)</label>
+              <input type="number" step="0.01" name="daya_reaktif" required class="w-full p-2 border border-gray-300 rounded-md">
+            </div>
+            <div class="space-y-2">
+              <label class="block font-semibold text-gray-700">Voltage (kV)</label>
+              <input type="number" step="0.01" name="tegangan" required class="w-full p-2 border border-gray-300 rounded-md">
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200">
+            Save Data
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div id="chartSection" class="content-section">
+      <div class="bg-white p-6 rounded-xl shadow-lg">
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+          <h2 class="text-xl font-bold text-gray-800">Current Trend Bay</h2>
+          <div class="flex space-x-2">
+            <select id="filterBay" class="p-2 border border-gray-300 rounded-md text-sm">
+              <option value="ALL">ALL BAYS</option>
+            </select>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="grafikBeban"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Table Section -->
+    <div id="tableSection" class="content-section">
+      <div class="bg-white p-6 rounded-xl shadow-lg">
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+          <h2 class="text-xl font-bold text-gray-800">Power Data</h2>
+          
+          <!-- Export Controls -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <select id="exportBay" class="p-2 border border-gray-300 rounded-md text-sm">
+              <option value="ALL">ALL BAYS</option>
+            </select>
+            <input type="date" id="startDate" class="p-2 border border-gray-300 rounded-md text-sm">
+            <input type="date" id="endDate" class="p-2 border border-gray-300 rounded-md text-sm">
+            <button id="exportFilterBtn" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition duration-200 text-sm">
+              Export Excel
+            </button>
+            <button id="clearAllBtn" class="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition duration-200 text-sm">
+              Clear All
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Controls for Table -->
+        <div class="mb-4 flex flex-col sm:flex-row gap-3">
+          <select id="tableFilterBay" class="p-2 border border-gray-300 rounded-md text-sm">
+            <option value="ALL">ALL BAYS</option>
+          </select>
+          <input type="date" id="tableStartDate" class="p-2 border border-gray-300 rounded-md text-sm">
+          <input type="date" id="tableEndDate" class="p-2 border border-gray-300 rounded-md text-sm">
+          <button id="applyFilterBtn" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200 text-sm">
+            Apply Filter
+          </button>
+          <button id="resetFilterBtn" class="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition duration-200 text-sm">
+            Reset Filter
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left border">
+            <thead class="bg-gray-100">
+              <tr class="border-b">
+                <th class="px-4 py-3 font-medium">No</th>
+                <th class="px-4 py-3 font-medium">Bay</th>
+                <th class="px-4 py-3 font-medium">Date</th>
+                <th class="px-4 py-3 font-medium">Time</th>
+                <th class="px-4 py-3 font-medium">Current (A)</th>
+                <th class="px-4 py-3 font-medium">Power (MW)</th>
+                <th class="px-4 py-3 font-medium">MVAR</th>
+                <th class="px-4 py-3 font-medium">Voltage (kV)</th>
+                <th class="px-4 py-3 font-medium">Action</th>
+              </tr>
+            </thead>
+            <tbody id="dataTable" class="divide-y divide-gray-200"></tbody>
+          </table>
+        </div>
+        <!-- Pagination Controls -->
+        <div id="paginationControls" class="mt-4 flex flex-wrap justify-center"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const form = document.getElementById('bebanForm');
+    const dataTable = document.getElementById('dataTable');
+    const grafikCtx = document.getElementById('grafikBeban').getContext('2d');
+    const filterBay = document.getElementById('filterBay');
+    const exportBay = document.getElementById('exportBay');
+    const tableFilterBay = document.getElementById('tableFilterBay');
+    const tableStartDate = document.getElementById('tableStartDate');
+    const tableEndDate = document.getElementById('tableEndDate');
+    const applyFilterBtn = document.getElementById('applyFilterBtn');
+    const resetFilterBtn = document.getElementById('resetFilterBtn');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const exportFilterBtn = document.getElementById('exportFilterBtn');
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    const paginationControls = document.getElementById('paginationControls');
+
+    // Navigation Elements
+    const navInput = document.getElementById('navInput');
+    const navChart = document.getElementById('navChart');
+    const navTable = document.getElementById('navTable');
+    const inputSection = document.getElementById('inputSection');
+    const chartSection = document.getElementById('chartSection');
+    const tableSection = document.getElementById('tableSection');
+    const navButtons = [navInput, navChart, navTable];
+    const contentSections = [inputSection, chartSection, tableSection];
+
+    // Data Storage
+    let dataBeban = [];
+    let chart = null;
+    let filteredData = [];
+    let currentPage = 1;
+    const rowsPerPage = 25;
+
+    // Color Palette for Charts
+    const colorPalette = [
+      '#3b82f6', '#ef4444', '#10b981', '#f59e0b', 
+      '#6366f1', '#ec4899', '#14b8a6', '#f97316',
+      '#8b5cf6', '#d946ef', '#0ea5e9', '#84cc16'
+    ];
+
+    // Format number to hide decimal if not needed
+    function formatNumber(value) {
+      return Number.isInteger(value) ? value.toString() : value.toFixed(2);
+    }
+
+
+    // Function to show a specific section and hide others
+    function showSection(sectionToShow, clickedButton) {
+      contentSections.forEach(section => {
+        section.classList.remove('active');
+      });
+      navButtons.forEach(button => {
+        button.classList.remove('bg-blue-600', 'text-white');
+        button.classList.add('text-gray-700', 'hover:bg-blue-100', 'hover:text-blue-700');
+      });
+
+      sectionToShow.classList.add('active');
+      clickedButton.classList.remove('text-gray-700', 'hover:bg-blue-100', 'hover:text-blue-700');
+      clickedButton.classList.add('bg-blue-600', 'text-white');
+
+      // Re-render chart if chart section is shown
+      if (sectionToShow === chartSection) {
+        updateChart(filterBay.value);
+      }
+      // Re-render table if table section is shown
+      if (sectionToShow === tableSection) {
+        applyFilters();
+      }
+    }
+
+    // Initialize Form and Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      // Set default date to today
+      const today = new Date().toISOString().split('T')[0];
+    fetch('/api/data')
+      .then(res => res.json())
+      .then(data => {
+        dataBeban = data;
+        updateFilterDropdowns();
+        applyFilters();
+        updateChart(filterBay.value);
+    })
+    .catch(err => {
+      console.error('Gagal mengambil data dari server:', err);
+      alert('⚠️ Tidak bisa memuat data dari server.');
+    });
+
+      document.querySelector('input[name="tanggal"]').value = today;
+      tableStartDate.value = today;
+      tableEndDate.value = today;
+      startDate.value = today;
+      endDate.value = today;
+
+      // Load existing data
+      if (dataBeban.length > 0) {
+        updateFilterDropdowns();
+        applyFilters(); // Initial table render
+        updateChart(filterBay.value); // Initial chart render
+      }
+
+      // Set initial active section (Input Data)
+      showSection(inputSection, navInput);
+
+      // Navigation button event listeners
+      navInput.addEventListener('click', () => showSection(inputSection, navInput));
+      navChart.addEventListener('click', () => showSection(chartSection, navChart));
+      navTable.addEventListener('click', () => showSection(tableSection, navTable));
+      
+      // On form submit
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+  
+        const newData = {
+          bay: formData.get('bay'),
+          tanggal: formData.get('tanggal'),
+          jam: formData.get('jam'),
+          arus: parseFloat(formData.get('arus')) || 0,
+          daya: parseFloat(formData.get('daya')) || 0,
+          daya_reaktif: parseFloat(formData.get('daya_reaktif')) || 0,
+          tegangan: parseFloat(formData.get('tegangan')) || 0
+        };
+
+        try {
+          const response = await fetch('/api/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(newData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('✅ Data berhasil disimpan ke server!');
+          form.reset();
+          const today = new Date().toISOString().split('T')[0];
+          document.querySelector('input[name="tanggal"]').value = today;
+        } else {
+          alert('❌ Gagal menyimpan data ke server.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('⚠️ Gagal terhubung ke server.');
+      }
+    });
+
+      
+      // Events for Chart and Table sections
+      filterBay.addEventListener('change', () => updateChart(filterBay.value));
+      exportFilterBtn.addEventListener('click', exportFilteredData);
+      applyFilterBtn.addEventListener('click', () => {
+        currentPage = 1;
+        applyFilters();
+      });
+      resetFilterBtn.addEventListener('click', resetFilters);
+      clearAllBtn.addEventListener('click', clearAllData);
+    });
+
+    // Delete data entry
+    function deleteData(id) {
+      if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+        fetch(`/api/data/${id}`, { method: 'DELETE' })
+          .then(res => res.json())
+          .then(result => {
+            if (result.success) {
+              dataBeban = dataBeban.filter(item => item.id !== id);
+              updateFilterDropdowns();
+              applyFilters();
+              updateChart(filterBay.value);
+              alert('✅ Data berhasil dihapus dari server!');
+            } else {
+              alert('❌ Gagal menghapus data dari server.');
+            }
+           })
+           .catch(err => {
+             console.error(err);
+             alert('⚠️ Terjadi kesalahan saat menghubungi server.');
+           });
+      }
+    }
+
+    // Clear all data
+    function clearAllData() {
+      if (confirm('Apakah Anda yakin ingin menghapus SEMUA data?')) {
+        fetch('/api/data', { method: 'DELETE' })
+          .then(res => res.json())
+          .then(result => {
+            if (result.success) {
+              dataBeban = [];
+              updateFilterDropdowns();
+              applyFilters();
+              updateChart(filterBay.value);
+              alert('✅ Semua data berhasil dihapus dari server!');
+            } else {
+              alert('❌ Gagal menghapus semua data dari server.');
+            }
+           })
+           .catch(err => {
+             console.error(err);
+             alert('⚠️ Gagal terhubung ke server.');
+           });
+      }
+    }
+
+    // Apply filters to table
+    function applyFilters() {
+      const selectedBay = tableFilterBay.value;
+      const startDateValue = tableStartDate.value;
+      const endDateValue = tableEndDate.value;
+      
+      filteredData = [...dataBeban];
+      
+      // Apply Bay filter
+      if (selectedBay && selectedBay !== 'ALL') {
+        filteredData = filteredData.filter(d => d.bay === selectedBay);
+      }
+      
+      // Apply Date range filter
+      if (startDateValue) {
+        filteredData = filteredData.filter(d => new Date(d.tanggal) >= new Date(startDateValue));
+      }
+      
+      if (endDateValue) {
+        const endDatePlus1 = new Date(endDateValue);
+        endDatePlus1.setDate(endDatePlus1.getDate() + 1);
+        filteredData = filteredData.filter(d => new Date(d.tanggal) <= endDatePlus1);
+      }
+      
+      // Sort by date (newest first)
+      filteredData.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal) || b.timestamp - a.timestamp);
+      
+      updateTable();
+    }
+
+    // Reset all filters
+    function resetFilters() {
+      tableFilterBay.value = 'ALL';
+      const today = new Date().toISOString().split('T')[0];
+      tableStartDate.value = today;
+      tableEndDate.value = today;
+      currentPage = 1;
+      applyFilters();
+    }
+
+    // Update Table Function
+    function updateTable() {
+      const start = (currentPage - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      const paginated = filteredData.slice(start, end);
+
+      dataTable.innerHTML = '';
+      if (paginated.length === 0) {
+        dataTable.innerHTML = `<tr><td colspan="9" class="text-center p-4 text-gray-500">No data available</td></tr>`;
+        renderPaginationControls();
+        return;
+      }
+
+      paginated.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-gray-50';
+        row.innerHTML = `
+          <td class="px-4 py-2">${start + index + 1}</td>
+          <td class="px-4 py-2">${item.bay}</td>
+          <td class="px-4 py-2">${item.tanggal}</td>
+          <td class="px- py-2">${item.jam}</td>
+          <td class="px-4 py-2">${formatNumber(item.arus)}</td>
+          <td class="px-4 py-2">${formatNumber(item.daya)}</td>
+          <td class="px-4 py-2">${formatNumber(item.daya_reaktif)}</td>
+          <td class="px-4 py-2">${formatNumber(item.tegangan)}</td>
+          <td class="px-4 py-2"> 
+          <button onclick="deleteData('${item.id}')" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm">Delete</button> </td> `; dataTable.appendChild(row); });
+  renderPaginationControls();
+}
+
+// Render pagination controls
+function renderPaginationControls() {
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+  paginationControls.innerHTML = '';
+
+  if (totalPages <= 1) return;
+
+  // Previous button
+  if (currentPage > 1) {
+    const prevBtn = document.createElement('button');
+    prevBtn.innerHTML = '&laquo;';
+    prevBtn.className = 'px-3 py-1 rounded border mx-1 bg-white text-black';
+    prevBtn.onclick = () => {
+      currentPage--;
+      updateTable();
+    };
+    paginationControls.appendChild(prevBtn);
+  }
+
+  // Page numbers
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.textContent = i;
+    btn.className = `px-3 py-1 rounded border mx-1 ${i === currentPage ? 'bg-blue-500 text-white' : 'bg-white text-black'}`;
+    btn.onclick = () => {
+      currentPage = i;
+      updateTable();
+    };
+    paginationControls.appendChild(btn);
+  }
+
+  // Next button
+  if (currentPage < totalPages) {
+    const nextBtn = document.createElement('button');
+    nextBtn.innerHTML = '&raquo;';
+    nextBtn.className = 'px-3 py-1 rounded border mx-1 bg-white text-black';
+    nextBtn.onclick = () => {
+      currentPage++;
+      updateTable();
+    };
+    paginationControls.appendChild(nextBtn);
+  }
+}
+
+// Update Chart Function
+function updateChart(selectedBay) {
+  const relevantData = selectedBay === 'ALL'
+    ? dataBeban
+    : dataBeban.filter(item => item.bay === selectedBay);
+
+  // Urutkan berdasarkan tanggal dan jam
+  relevantData.sort((a, b) => {
+    const tA = new Date(`${a.tanggal} ${a.jam}`);
+    const tB = new Date(`${b.tanggal} ${b.jam}`);
+    return tA - tB;
+  });
+
+  // Kelompokkan data berdasarkan bay
+  const bayGroups = {};
+  relevantData.forEach(item => {
+    if (!bayGroups[item.bay]) bayGroups[item.bay] = [];
+    const tgl = new Date(item.tanggal).getDate(); // ambil tanggal (1–31)
+    const jamOffset = item.jam === "10:00" ? 0 : 0.5;
+    const xValue = tgl + jamOffset;
+    bayGroups[item.bay].push({ x: xValue, y: item.arus });
+  });
+
+  // Siapkan dataset Chart.js
+  const datasets = Object.keys(bayGroups).map((bay, idx) => {
+    const color = colorPalette[idx % colorPalette.length];
+    return {
+      label: bay,
+      data: bayGroups[bay],
+      backgroundColor: color,
+      borderColor: color,
+      borderWidth: 2,
+      tension: 0.3,
+      spanGaps: true,
+      fill: false,
+      parsing: false
+    };
+  });
+
+  if (chart) chart.destroy();
+
+  chart = new Chart(grafikCtx, {
+    type: 'line',
+    data: {
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      parsing: false,
+      plugins: {
+        legend: { position: 'top' },
+        title: {
+          display: true,
+          text: selectedBay === 'ALL' ? 'Current Trend Semua Bay (Jam 10 & 19)' : `Current Trend ${selectedBay}`
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          min: 1,
+          max: 31,
+          ticks: {
+            stepSize: 1,
+            callback: val => Number.isInteger(val) ? val : ''
+          },
+          title: {
+            display: true,
+            text: 'Tanggal (1–31)'
+          }
+        },
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Arus (A)'
+          }
+        }
+      }
+    }
+  });
+}
+
+// Update dropdown Bay if new Bay is added
+function updateFilterDropdowns() {
+  const dropdowns = [filterBay, exportBay, tableFilterBay];
+  const uniqueBays = [...new Set(dataBeban.map(d => d.bay))].sort();
+
+  dropdowns.forEach(dropdown => {
+    const currentVal = dropdown.value;
+    dropdown.innerHTML = '<option value="ALL">ALL BAYS</option>';
+    
+    uniqueBays.forEach(bay => {
+      const option = document.createElement('option');
+      option.value = bay;
+      option.textContent = bay;
+      dropdown.appendChild(option);
+    });
+    
+    // Keep previously selected value if it still exists
+    if (uniqueBays.includes(currentVal)) {
+      dropdown.value = currentVal;
+    }
+  });
+}
+
+// Export filtered data to Excel
+function exportFilteredData() {
+  const selectedBay = exportBay.value;
+  const startDateValue = startDate.value;
+  const endDateValue = endDate.value;
+  
+  let dataToExport = [...dataBeban];
+  
+  // Apply Bay filter
+  if (selectedBay && selectedBay !== 'ALL') {
+    dataToExport = dataToExport.filter(d => d.bay === selectedBay);
+  }
+  
+  // Apply Date range filter
+  if (startDateValue) {
+    dataToExport = dataToExport.filter(d => new Date(d.tanggal) >= new Date(startDateValue));
+  }
+  
+  if (endDateValue) {
+    const endDatePlus1 = new Date(endDateValue);
+    endDatePlus1.setDate(endDatePlus1.getDate() + 1);
+    dataToExport = dataToExport.filter(d => new Date(d.tanggal) <= endDatePlus1);
+  }
+  
+  // Format data for Excel
+  const formattedData = dataToExport.map(item => ({
+    'Bay': item.bay,
+    'Date': item.tanggal,
+    'Time': item.jam,
+    'Current (A)': item.arus,
+    'Power (MW)': item.daya,
+    'Reactive Power (MVAR)': item.daya_reaktif,
+    'Voltage (kV)': item.tegangan
+  }));
+  
+  // Create Excel worksheet
+  const ws = XLSX.utils.json_to_sheet(formattedData);
+  
+  // Set column widths
+  ws['!cols'] = [
+    {wch: 15}, {wch: 15}, {wch: 10}, 
+    {wch: 15}, {wch: 15}, {wch: 20}, {wch: 15}
+  ];
+  
+  // Create workbook
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Power Data");
+  
+  // Generate file name
+  const now = new Date();
+  const timestamp = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}`;
+  const fileName = `Power_Data_${selectedBay !== 'ALL' ? selectedBay + '_' : ''}${timestamp}.xlsx`;
+  
+  // Export to Excel
+  XLSX.writeFile(wb, fileName);
+}
+
+// Add deleteData to window for button access
+window.deleteData = deleteData;
+  </script>
+</body> 
+</html>
